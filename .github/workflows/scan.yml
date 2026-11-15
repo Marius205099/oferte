@@ -2,31 +2,54 @@ name: Scanare oferte
 
 on:
   schedule:
-    # 3 ori pe zi, ora Romaniei ~08:00, ~14:00, ~20:00 (cron e in UTC)
-    - cron: "0 5,11,17 * * *"
+    # O data pe zi la 03:00 ora Romaniei. Cron-ul e in UTC, iar Romania e UTC+2 iarna si UTC+3 vara,
+    # asa ca pornim la ambele ore si pasul "Verifica ora" o lasa sa ruleze doar pe cea potrivita.
+    - cron: "0 1 * * *" # 03:00 iarna (EET)
+    - cron: "0 0 * * *" # 03:00 vara (EEST)
   workflow_dispatch: {}
 
 permissions:
   contents: write
 
+# o singura scanare odata; una noua asteapta sa se termine cea curenta
 concurrency:
   group: scan
   cancel-in-progress: false
+
+env:
+  # zile in care scanarea programata e sarita (YYYY-MM-DD, ora Romaniei); rularea manuala merge oricand
+  SARI_ZILE: "2026-11-16"
 
 jobs:
   scan:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Verifica ora
+        id: ora
+        if: github.event_name == 'schedule'
+        run: |
+          offset=$(TZ=Europe/Bucharest date +%z)
+          azi=$(TZ=Europe/Bucharest date +%F)
+          run=false
+          if [ "${{ github.event.schedule }}" = "0 1 * * *" ] && [ "$offset" = "+0200" ]; then run=true; fi
+          if [ "${{ github.event.schedule }}" = "0 0 * * *" ] && [ "$offset" = "+0300" ]; then run=true; fi
+          case " $SARI_ZILE " in *" $azi "*) run=false; echo "Scanarea din $azi e sarita.";; esac
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+      - if: steps.ora.outputs.run != 'false'
+        uses: actions/checkout@v4
+      - if: steps.ora.outputs.run != 'false'
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
-      - run: pip install -r requirements.txt
+      - if: steps.ora.outputs.run != 'false'
+        run: pip install -r requirements.txt
       - name: Scaneaza magazinele
+        if: steps.ora.outputs.run != 'false'
         run: python scraper/scrape.py
       - name: Salveaza datele
+        if: steps.ora.outputs.run != 'false'
         run: |
           git config user.name "oferte-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

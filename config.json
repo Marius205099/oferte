@@ -1,5 +1,5 @@
 {
-  "_info": "Editeaza lista 'cautari' cu produsele pe care vrei sa le urmaresti. Scanarea ruleaza automat de 3 ori pe zi (GitHub Actions).",
+  "_info": "Editeaza lista 'cautari' cu produsele pe care vrei sa le urmaresti. Scanarea ruleaza automat zilnic la 03:00 (GitHub Actions).",
   "cautari": [
     "iphone 15",
     "iphone 16",

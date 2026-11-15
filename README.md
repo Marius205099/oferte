@@ -1,7 +1,7 @@
 # Oferte RO
 
 Site care adună reducerile din magazinele online din România și compară prețurile pentru un produs.
-Se actualizează automat de 3 ori pe zi (≈08:00, 14:00, 20:00 ora României) prin GitHub Actions și e publicat pe GitHub Pages.
+Se actualizează automat o dată pe zi, la 03:00 ora României, prin GitHub Actions și e publicat pe GitHub Pages.
 
 ## Cum funcționează
 
