@@ -230,6 +230,7 @@ def main():
         istoric[key] = h
         prices = [x[1] for x in h]
         p["pret_minim_60z"] = min(prices)
+        p["zile_istoric"] = len(h)
         ref = p["pret_vechi"]
         if not ref and len(h) > 1:
             maxp = max(prices[:-1])

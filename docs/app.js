@@ -79,7 +79,7 @@ function filter() {
 function card(p) {
   const img = p.imagine ? `<img src="${esc(p.imagine)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : "";
   const old = p.pret_referinta ? `<span class="old" title="${p.sursa_reducere === "istoric" ? "cel mai mare preț văzut în ultimele 60 de zile" : "preț vechi afișat de magazin"}">${lei(p.pret_referinta)}</span>` : "";
-  const low = p.pret <= p.pret_minim_60z ? `<span class="hint">Cel mai mic preț din ultimele 60 de zile</span>` : "";
+  const low = p.zile_istoric >= 7 && p.pret <= p.pret_minim_60z ?`<span class="hint">Cel mai mic preț din ultimele 60 de zile</span>` : "";
   return `<a class="card" href="${esc(p.url)}" target="_blank" rel="noopener nofollow">
     ${p.reducere_pct > 0 ? `<span class="badge">-${p.reducere_pct}%</span>` : ""}
     <div class="img">${img}</div>
@@ -94,8 +94,11 @@ function card(p) {
 function renderCompare(list) {
   const box = $("compare");
   if (!$("q").value.trim() || !list.length) { box.hidden = true; return; }
+  // ignora produsele mult sub pretul median (huse, folii) ca sa nu para "cel mai ieftin"
+  const sorted = list.map((p) => p.pret).sort((a, b) => a - b);
+  const floor = sorted[Math.floor(sorted.length / 2)] * 0.25;
   const best = {};
-  for (const p of list) if (!best[p.magazin] || p.pret < best[p.magazin].pret) best[p.magazin] = p;
+  for (const p of list) if (p.pret >= floor &&!best[p.magazin] || p.pret < best[p.magazin].pret) best[p.magazin] = p;
   const rows = Object.values(best).sort((a, b) => a.pret - b.pret);
   box.hidden = false;
   box.innerHTML = `<h2>Cel mai mic preț pentru „${esc($("q").value.trim())}”, pe magazin</h2><ol>` + rows.map((p) =>
