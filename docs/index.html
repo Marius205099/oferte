@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Oferte RO</title>
+<meta name="description" content="Reduceri si comparatie de preturi din magazinele online din Romania, actualizate de 3 ori pe zi.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%8F%B7%EF%B8%8F</text></svg>">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <h1>Oferte<span>RO</span></h1>
+      <p id="meta">Se încarcă…</p>
+    </div>
+    <form id="searchForm" class="search" role="search">
+      <input id="q" type="search" placeholder="Caută un produs, ex: iphone 15 128gb" autocomplete="off" aria-label="Caută produs">
+      <button type="submit">Caută</button>
+    </form>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="filters" aria-label="Filtre">
+    <div class="row" id="stores"></div>
+    <div class="row controls">
+      <label>Categorie
+        <select id="cat"><option value="">Toate</option></select>
+      </label>
+      <label>Reducere minimă
+        <select id="disc">
+          <option value="0">Oricare</option>
+          <option value="1">Doar reduceri</option>
+          <option value="10">10%+</option>
+          <option value="20">20%+</option>
+          <option value="30">30%+</option>
+          <option value="50">50%+</option>
+        </select>
+      </label>
+      <label>Preț (lei)
+        <span class="range"><input id="pmin" type="number" min="0" placeholder="min" inputmode="numeric"><input id="pmax" type="number" min="0" placeholder="max" inputmode="numeric"></span>
+      </label>
+      <label>Sortare
+        <select id="sort">
+          <option value="disc">Reducere mare</option>
+          <option value="asc">Preț crescător</option>
+          <option value="desc">Preț descrescător</option>
+          <option value="save">Economie (lei)</option>
+        </select>
+      </label>
+      <label class="check"><input id="noacc" type="checkbox" checked> Ascunde accesoriile</label>
+      <button id="reset" type="button" class="link">Resetează</button>
+    </div>
+  </section>
+
+  <section id="compare" class="compare" hidden></section>
+
+  <p id="count" class="count"></p>
+  <section id="grid" class="grid" aria-live="polite"></section>
+  <div class="more"><button id="more" type="button" hidden>Arată mai multe</button></div>
+</main>
+
+<footer class="wrap foot">
+  <details>
+    <summary>Magazine scanate și starea ultimei scanări</summary>
+    <ul id="status"></ul>
+  </details>
+  <p>Prețurile sunt preluate automat de 3 ori pe zi și pot diferi de cele din magazin. Verifică întotdeauna prețul final pe site-ul magazinului. Reducerea e calculată față de prețul vechi afișat de magazin sau, dacă lipsește, față de cel mai mare preț văzut de noi în ultimele 60 de zile.</p>
+</footer>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "_info": "Editeaza lista 'cautari' cu produsele pe care vrei sa le urmaresti. Scanarea ruleaza automat de 3 ori pe zi (GitHub Actions).",
+  "cautari": [
+    "iphone 15",
+    "iphone 16",
+    "samsung galaxy s25",
+    "laptop",
+    "televizor",
+    "casti wireless",
+    "ps5",
+    "frigider",
+    "masina de spalat",
+    "aspirator robot",
+    "espressor",
+    "masina de gaurit",
+    "cafea boabe",
+    "lego",
+    "parfum"
+  ],
+  "rezultate_per_cautare": 30,
+  "pauza_intre_cereri_sec": 2
+}
