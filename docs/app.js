@@ -98,7 +98,7 @@ function renderCompare(list) {
   const sorted = list.map((p) => p.pret).sort((a, b) => a - b);
   const floor = sorted[Math.floor(sorted.length / 2)] * 0.25;
   const best = {};
-  for (const p of list) if (p.pret >= floor &&!best[p.magazin] || p.pret < best[p.magazin].pret) best[p.magazin] = p;
+  for (const p of list) if (p.pret >= floor && (!best[p.magazin] || p.pret < best[p.magazin].pret)) best[p.magazin] = p;
   const rows = Object.values(best).sort((a, b) => a.pret - b.pret);
   box.hidden = false;
   box.innerHTML = `<h2>Cel mai mic preț pentru „${esc($("q").value.trim())}”, pe magazin</h2><ol>` + rows.map((p) =>
