@@ -13,7 +13,6 @@ import time
 import unicodedata
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
-from urllib import robotparser
 from urllib.parse import quote, quote_plus, urljoin, urlparse
 
 import requests
@@ -37,19 +36,52 @@ session.headers.update(HEADERS)
 _robots = {}
 
 
+def parse_robots(text):
+    """Grupurile din robots.txt: [{"agents": [...], "rules": [(allow, pattern)]}]."""
+    groups, cur, in_agents = [], None, False
+    for raw in text.splitlines():
+        line = raw.split("#", 1)[0].strip()
+        if ":" not in line:
+            continue
+        key, val = (x.strip() for x in line.split(":", 1))
+        key = key.lower()
+        if key == "user-agent":
+            if not in_agents:
+                cur = {"agents": [], "rules": []}
+                groups.append(cur)
+            cur["agents"].append(val.lower())
+            in_agents = True
+            continue
+        in_agents = False
+        if key in ("allow", "disallow") and cur is not None and val:
+            cur["rules"].append((key == "allow", val))
+    return groups
+
+
+def robots_allows(groups, path):
+    """Regula cea mai lunga castiga (cu * si $), ca la Google; urllib.robotparser nu stie wildcard-uri."""
+    agent = BOT_NAME.lower()
+    mine = [g for g in groups if any(a != "*" and a in agent for a in g["agents"])]
+    rules = [r for g in (mine or [g for g in groups if "*" in g["agents"]]) for r in g["rules"]]
+    best = None
+    for allow, pat in rules:
+        rx = "^" + re.escape(pat).replace(r"\*", ".*").replace(r"\$", "$")
+        if re.match(rx, path) and (best is None or len(pat) > len(best[1]) or (len(pat) == len(best[1]) and allow)):
+            best = (allow, pat)
+    return best is None or best[0]
+
+
 def allowed(url):
     """Verifica robots.txt (cache per domeniu)."""
     parts = urlparse(url)
     base = f"{parts.scheme}://{parts.netloc}"
     if base not in _robots:
-        rp = robotparser.RobotFileParser()
         try:
             r = session.get(base + "/robots.txt", timeout=15)
-            rp.parse(r.text.splitlines() if r.status_code == 200 else [])
+            _robots[base] = parse_robots(r.text) if r.status_code == 200 else []
         except requests.RequestException:
-            rp.parse([])
-        _robots[base] = rp
-    return _robots[base].can_fetch(BOT_NAME, url)
+            _robots[base] = []
+    return robots_allows(_robots[base], parts.path + ("?" + parts.query if parts.query else ""))
 
 
 def parse_price(text):
@@ -112,6 +144,8 @@ def extract_html(store, html, base_url):
         price = parse_price(_pick(card, store["price"]))
         if not (name and link and price):
             continue
+        if re.search(r"stoc epuizat|indisponibil|nu mai este disponibil", card.get_text(" ", strip=True), re.I):
+            continue
         old = parse_price(_pick(card, store.get("old_price")))
         img = _pick(card, store.get("image"))
         out.append({
@@ -149,6 +183,66 @@ def extract_vtex(store, data, base_url):
     return out
 
 
+def extract_product_page(html, url):
+    """Pagina unui singur produs: JSON-LD Product, apoi meta/atribute de pret uzuale."""
+    s = BeautifulSoup(html, "html.parser")
+    name = price = img = None
+    for sc in s.select('script[type="application/ld+json"]'):
+        try:
+            data = json.loads(sc.string or "")
+        except ValueError:
+            continue
+        for x in data if isinstance(data, list) else [data]:
+            if isinstance(x, dict) and x.get("@type") == "Product":
+                offers = x.get("offers") or {}
+                offers = offers[0] if isinstance(offers, list) and offers else offers
+                name, price = x.get("name"), parse_price(offers.get("price") if isinstance(offers, dict) else None)
+                img = x.get("image")[0] if isinstance(x.get("image"), list) else x.get("image")
+    name = name or _pick(s, "meta[property='og:title']@content || h1")
+    price = price or parse_price(_pick(s, "meta[itemprop=price]@content || [data-price-type=finalPrice]@data-price-amount"
+                                          " || [data-price]@data-price"))
+    if price is None:
+        m = re.search(r'"price"\s*:\s*"?([\d.]+)', html)
+        price = parse_price(m.group(1)) if m else None
+    if not (name and price):
+        return None
+    # produsele epuizate raman pe site cu pret, dar nu se pot cumpara (si ar da alerte false)
+    stock = _pick(s, "[itemprop=availability]@href || [itemprop=availability]@content") or ""
+    if re.search(r"OutOfStock|SoldOut|Discontinued", stock, re.I) or re.search(r'"availability"\s*:\s*"[^"]*OutOfStock', html):
+        return None
+    old = parse_price(_pick(s, "[data-price-type=oldPrice]@data-price-amount"))
+    img = img or _pick(s, "meta[property='og:image']@content")
+    return {"nume": re.sub(r"\s+", " ", name).strip(), "url": url, "pret": price,
+            "pret_vechi": old if old and price < old < price * 5 else None, "imagine": img}
+
+
+def product_links(store):
+    """Linkurile de produs din paginile de listare sau din sitemap-urile magazinului."""
+    rx = re.compile(store["link_regex"], re.I)
+    links = []
+    for src in store["listing"]:
+        text = fetch(src)
+        found = re.findall(r"<loc>([^<]+)</loc>", text) if src.endswith(".xml") else re.findall(r'href="([^"]+)"', text)
+        for href in found:
+            u = urljoin(store["base"], href.replace("&amp;", "&"))
+            if rx.search(u) and u not in links:
+                links.append(u)
+    return links
+
+
+def scrape_pages(store, pause):
+    out = []
+    for url in product_links(store):
+        try:
+            item = extract_product_page(fetch(url), url)
+        except (requests.RequestException, PermissionError):
+            item = None
+        if item:
+            out.append(item)
+        time.sleep(pause)
+    return out
+
+
 def scrape_store(store, term, limit):
     url = store["search"].format(q=quote_plus(term), qp=quote(term))
     if store["type"] == "vtex":
@@ -156,7 +250,6 @@ def scrape_store(store, term, limit):
     else:
         items = extract_html(store, fetch(url), store["base"])
     words = [w for w in re.split(r"\s+", term.lower()) if len(w) > 1]
-    # pastreaza doar rezultatele care contin cuvintele cautate (magazinele returneaza si "recomandari")
     # magazinele returneaza si "recomandari"; pastram doar produsele care contin toate cuvintele cautate
     return [i for i in items if all(w in i["nume"].lower() for w in words)][:limit]
 
@@ -235,9 +328,11 @@ def main():
     for store in stores:
         ok = err = 0
         last_err = None
-        for term in terms:
+        pages = store["type"] == "pages"
+        # magazinele "pages" nu au cautare permisa: citim o data paginile de produs gasite in listare/sitemap
+        for term in (terms[:1] if pages else terms):
             try:
-                items = scrape_store(store, term, limit)
+                items = scrape_pages(store, pause) if pages else scrape_store(store, term, limit)
                 ok += 1
             except Exception as e:  # noqa: BLE001 - un magazin picat nu opreste scanarea
                 err += 1

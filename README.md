@@ -35,6 +35,8 @@ Magazinele pe VTEX (Auchan, Dacris etc.) au tipul `vtex` și nu au nevoie de sel
 
 ## Limitări
 
-Multe magazine (Altex, Flanco, PC Garage, Notino, Elefant, Decathlon etc.) blochează roboții sau interzic scanarea
-în `robots.txt`, așa că nu sunt incluse. Pentru acoperire completă, varianta corectă sunt feed-urile de produse din
-rețelele de afiliere (2Performant, Profitshare), pe care se bazează și comparatoarele mari.
+- **Magazine scanate:** eMAG, evoMAG, Carrefour, iTGalaxy, Auchan. Produsele epuizate sunt ignorate.
+- **Altex, Media Galaxy, Flanco, Vexio, Trendyol** blochează programele automate, iar **PC Garage și CEL.ro** interzic
+  scanarea în `robots.txt`, așa că nu sunt incluse. Google interzice și el căutările automate.
+  Varianta corectă pentru aceste magazine sunt feed-urile de produse din rețelele de afiliere (2Performant, Profitshare).
+- GitHub poate întârzia rulările programate cu până la o oră.

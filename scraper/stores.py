@@ -1,7 +1,17 @@
-"""Magazinele scanate. Pentru a adauga un magazin nou, copiaza un bloc si ajusteaza selectorii CSS.
+"""Magazinele scanate. Pentru a adauga un magazin nou, copiaza un bloc si ajusteaza.
 
-Selectori (title, link, image, price, old_price): "css" = textul elementului, "css@attr" = atribut, "@attr" = atribut pe card,
-"a || b" = primul care exista. {q} = termen cu '+', {qp} = termen cu '%20'.
+Tipuri:
+- "html":  pagina de cautare a magazinului; selectori CSS (title, link, image, price, old_price):
+           "css" = textul elementului, "css@attr" = atribut, "@attr" = atribut pe card, "a || b" = primul care exista.
+           {q} = termen cu '+', {qp} = termen cu '%20'.
+- "vtex":  API-ul public de cautare al magazinelor pe platforma VTEX (Auchan, Kaufland etc.).
+- "pages": cand robots.txt interzice cautarea: linkurile de produs se iau din paginile "listing"
+           (o categorie sau un sitemap .xml) si se pastreaza cele care se potrivesc cu "link_regex";
+           pretul se citeste din pagina fiecarui produs.
+Robots.txt e verificat automat la fiecare cerere; magazinele care il interzic sunt sarite.
+
+Nu se pot scana (blocheaza programele automate): Altex, Media Galaxy, Flanco, Vexio, Trendyol, Okazii.
+Interzic scanarea in robots.txt: PC Garage, CEL.ro.
 """
 
 STORES = [
@@ -16,24 +26,21 @@ STORES = [
         "old_price": ".product-old-price s || .rrp-lp30d s || .product-old-price",
     },
     {
-        "id": "dedeman", "name": "Dedeman", "base": "https://www.dedeman.ro", "type": "html",
-        "search": "https://www.dedeman.ro/ro/catalogsearch/result/?q={q}",
-        "card": "div.product-item",
-        "title": "img.product-image-photo@alt || .product-item-link",
-        "link": "a.product-item-photo@href",
-        "image": "img.product-image-photo@src",
-        "price": "[data-price-type=finalPrice]@data-price-amount || .special-price .price || .price",
-        "old_price": "[data-price-type=oldPrice]@data-price-amount || .old-price .price",
+        "id": "evomag", "name": "evoMAG", "base": "https://www.evomag.ro", "type": "pages",
+        "listing": [
+            "https://www.evomag.ro/componente-pc-gaming-gaming-console/filtru/platforma:playstation+5",
+            "https://www.evomag.ro/componente-pc-gaming-gaming-console/filtru/platforma:playstation+5+pro",
+        ],
+        "link_regex": r"/componente-pc-gaming-gaming-console/.+\.html$",
     },
     {
-        "id": "carrefour", "name": "Carrefour", "base": "https://carrefour.ro", "type": "html",
-        "search": "https://carrefour.ro/catalogsearch/result/?q={q}",
-        "card": "li.product[data-product-id]",
-        "title": "img.product-image-photo@alt",
-        "link": "a.productItem-image@href",
-        "image": "img.product-image-photo@data-src",
-        "price": "meta[itemprop=price]@content || .price-final@data-price-amount",
-        "old_price": "[data-price-type=oldPrice]@data-price-amount || .old-price .price || .price-old",
+        # cautarea (/catalogsearch) e interzisa in robots.txt; folosim sitemap-ul public de produse
+        "id": "carrefour", "name": "Carrefour", "base": "https://carrefour.ro", "type": "pages",
+        "listing": [
+            "https://carrefour.ro/pub/sitemap/sitemap_001.xml",
+            "https://carrefour.ro/pub/sitemap/sitemap_002.xml",
+        ],
+        "link_regex": r"/produse/consola-[^/]*(playstation-5|ps5)",
     },
     {
         "id": "itgalaxy", "name": "iTGalaxy", "base": "https://www.itgalaxy.ro", "type": "html",
@@ -48,9 +55,5 @@ STORES = [
     {
         "id": "auchan", "name": "Auchan", "base": "https://www.auchan.ro", "type": "vtex",
         "search": "https://www.auchan.ro/api/catalog_system/pub/products/search?ft={qp}&_from=0&_to=39",
-    },
-    {
-        "id": "dacris", "name": "Dacris", "base": "https://www.dacris.net", "type": "vtex",
-        "search": "https://www.dacris.net/api/catalog_system/pub/products/search?ft={qp}&_from=0&_to=39",
     },
 ]
