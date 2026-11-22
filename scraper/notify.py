@@ -9,6 +9,9 @@ from email.message import EmailMessage
 from pathlib import Path
 
 path = Path(__file__).resolve().parent.parent / "alerta.txt"
+if "--test" in sys.argv:
+    path.write_text("Test alerta PS5\nEmail de test: alertele de pret pentru PS5 ajung aici.\n\n"
+                    "Toate ofertele: https://marius205099.github.io/oferte/\n", encoding="utf-8")
 if not path.exists():
     print("Nicio alerta.")
     sys.exit(0)

@@ -6,7 +6,12 @@ on:
     # asa ca pornim la ambele ore si pasul "Verifica ora" o lasa sa ruleze doar pe cea potrivita.
     - cron: "0 1 * * *" # 03:00 iarna (EET)
     - cron: "0 0 * * *" # 03:00 vara (EEST)
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      email_test:
+        description: "Trimite si un email de test"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -63,3 +68,10 @@ jobs:
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
         run: python scraper/notify.py
+      - name: Email de test
+        if: inputs.email_test
+        env:
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+        run: python scraper/notify.py --test
