@@ -56,3 +56,10 @@ jobs:
           git add docs/data
           git diff --cached --quiet || git commit -m "Actualizare oferte $(date -u +'%Y-%m-%d %H:%M') UTC"
           git push
+      - name: Trimite alerta pe email
+        if: steps.ora.outputs.run != 'false' && hashFiles('alerta.txt') != ''
+        env:
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+        run: python scraper/notify.py

@@ -10,6 +10,7 @@ import json
 import re
 import sys
 import time
+import unicodedata
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from urllib import robotparser
@@ -166,6 +167,41 @@ def pid(url):
     return hashlib.md5(url.split("?")[0].encode()).hexdigest()[:12]
 
 
+def norm(s):
+    return unicodedata.normalize("NFD", s.lower()).encode("ascii", "ignore").decode()
+
+
+def passes_filter(name, flt):
+    """Filtrul din config.json: incepe_cu / contine_unul / exclude (oricare poate lipsi)."""
+    n = norm(name).strip()
+    if flt.get("incepe_cu") and not any(n.startswith(norm(w)) for w in flt["incepe_cu"]):
+        return False
+    if flt.get("contine_unul") and not any(norm(w) in n for w in flt["contine_unul"]):
+        return False
+    return not any(norm(w) in n for w in flt.get("exclude", []))
+
+
+def check_alert(produse, prag):
+    """Scrie alerta.txt (pentru email) cu produsele sub prag care nu au mai fost anuntate la acest pret."""
+    vechi = load_json(DATA / "alerte.json", {})
+    sub = {p["id"]: p for p in produse if p["pret"] < prag}
+    noi = [p for k, p in sub.items() if k not in vechi or p["pret"] < vechi[k]]
+    # tinem minte doar ce e inca sub prag, ca o scadere viitoare sub prag sa fie anuntata din nou
+    (DATA / "alerte.json").write_text(json.dumps({k: p["pret"] for k, p in sub.items()}), encoding="utf-8")
+    alert_file = ROOT / "alerta.txt"
+    if not noi:
+        alert_file.unlink(missing_ok=True)
+        return
+    noi.sort(key=lambda p: p["pret"])
+    lines = [f"Am gasit {len(noi)} oferte sub {prag:g} lei:", ""]
+    for p in noi:
+        lines += [f"{p['pret']:.2f} lei - {p['nume']} ({p['magazin']})", p["url"], ""]
+    lines.append("Toate ofertele: https://marius205099.github.io/oferte/")
+    subject = f"PS5 sub {prag:g} lei: {noi[0]['pret']:.2f} lei la {noi[0]['magazin']}"
+    alert_file.write_text(subject + "\n" + "\n".join(lines), encoding="utf-8")
+    print(f"ALERTA: {len(noi)} oferte noi sub {prag:g} lei")
+
+
 def load_json(path, default):
     try:
         return json.loads(path.read_text(encoding="utf-8"))
@@ -183,6 +219,8 @@ def main():
     terms = [t.strip() for t in args.cautari.split(",")] if args.cautari else cfg.get("cautari", [])
     limit = cfg.get("rezultate_per_cautare", 30)
     pause = cfg.get("pauza_intre_cereri_sec", 2)
+    flt = cfg.get("filtru", {})
+    prag = (cfg.get("alerta") or {}).get("pret_sub")
     stores = STORES
     if args.magazine:
         keep = {m.strip() for m in args.magazine.split(",")}
@@ -208,6 +246,8 @@ def main():
                 if isinstance(e, PermissionError):
                     break
             for it in items:
+                if not passes_filter(it["nume"], flt):
+                    continue
                 key = pid(it["url"])
                 prev = produse.get(key)
                 if prev:
@@ -245,10 +285,11 @@ def main():
         "actualizat": now.isoformat(timespec="minutes"),
         "magazine": stare,
         "cautari": terms,
-        "produse": sorted(produse.values(), key=lambda p: -p["reducere_pct"]),
+        "alerta_pret": prag,
+        "produse": sorted(produse.values(), key=lambda p: p["pret"]),
     }
     if args.magazine or args.cautari:
-        for p in rezultat["produse"][:10]:
+        for p in rezultat["produse"][:15]:
             print(f"  -{p['reducere_pct']:>2}%  {p['pret']:>9.2f}  {p['magazin']:<9} {p['nume'][:70]}")
         print(f"Test: {len(produse)} produse (nu s-a salvat nimic).")
         return
@@ -257,6 +298,8 @@ def main():
         sys.exit(1)
     (DATA / "oferte.json").write_text(json.dumps(rezultat, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     (DATA / "istoric.json").write_text(json.dumps(istoric, separators=(",", ":")), encoding="utf-8")
+    if prag:
+        check_alert(rezultat["produse"], prag)
     reduse = sum(1 for p in produse.values() if p["reducere_pct"] > 0)
     print(f"Total: {len(produse)} produse, {reduse} cu reducere.")
 

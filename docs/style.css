@@ -57,6 +57,7 @@ button { font: inherit; cursor: pointer; }
 .card .hint { font-size: 12px; color: var(--good); }
 .badge { position: absolute; top: 8px; left: 8px; background: var(--accent); color: var(--accent-ink);
   font-weight: 700; font-size: 13px; padding: 3px 8px; border-radius: 6px; }
+.badge.deal { background: var(--good); }
 .more { text-align: center; margin: 20px 0; }
 .empty { grid-column: 1/-1; text-align: center; color: var(--muted); padding: 40px 0; }
 .foot { color: var(--muted); font-size: 13px; padding-bottom: 40px; }

@@ -1,6 +1,7 @@
 # Oferte RO
 
-Site care adună reducerile din magazinele online din România și compară prețurile pentru un produs.
+Site care urmărește prețurile consolelor PlayStation 5 în magazinele online din România, sortate de la cel mai mic preț,
+și trimite un email când o consolă scade sub pragul din `config.json` (`alerta.pret_sub`, acum 3500 lei).
 Se actualizează automat o dată pe zi, la 03:00 ora României, prin GitHub Actions și e publicat pe GitHub Pages.
 
 ## Cum funcționează
@@ -11,9 +12,15 @@ Se actualizează automat o dată pe zi, la 03:00 ora României, prin GitHub Acti
   văzut de noi în ultimele 60 de zile (`docs/data/istoric.json`).
 - `docs/` e site-ul static: căutare, filtre pe magazin, categorie, reducere și preț, plus comparația „cel mai mic preț pe magazin”.
 
+## Alerta pe email
+
+Pasul „Trimite alerta pe email” din workflow folosește trei secrete (Settings → Secrets and variables → Actions):
+`SMTP_USER` (adresa Yahoo), `SMTP_PASS` (o *parolă de aplicație* Yahoo, nu parola contului) și `EMAIL_TO`.
+O ofertă e anunțată o singură dată, apoi din nou doar dacă prețul scade și mai mult.
+
 ## Urmărește alte produse
 
-Editează lista `cautari` din `config.json` (direct pe GitHub, cu creionul). Scanarea următoare le va include.
+Editează lista `cautari` și `filtru` din `config.json` (direct pe GitHub, cu creionul). Scanarea următoare le va include.
 Poți porni scanarea manual din tab-ul **Actions → Scanare oferte → Run workflow**.
 
 ## Adaugă un magazin

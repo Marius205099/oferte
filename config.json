@@ -1,22 +1,18 @@
 {
-  "_info": "Editeaza lista 'cautari' cu produsele pe care vrei sa le urmaresti. Scanarea ruleaza automat zilnic la 03:00 (GitHub Actions).",
+  "_info": "Scaneaza zilnic la 03:00 (GitHub Actions) consolele PlayStation 5. Sub pretul din 'alerta' se trimite email.",
   "cautari": [
-    "iphone 15",
-    "iphone 16",
-    "samsung galaxy s25",
-    "laptop",
-    "televizor",
-    "casti wireless",
-    "ps5",
-    "frigider",
-    "masina de spalat",
-    "aspirator robot",
-    "espressor",
-    "masina de gaurit",
-    "cafea boabe",
-    "lego",
-    "parfum"
+    "consola playstation 5",
+    "consola ps5",
+    "playstation 5"
   ],
-  "rezultate_per_cautare": 30,
+  "filtru": {
+    "incepe_cu": ["consola"],
+    "contine_unul": ["playstation 5", "ps5"],
+    "exclude": ["retro", "portabil"]
+  },
+  "alerta": {
+    "pret_sub": 3500
+  },
+  "rezultate_per_cautare": 60,
   "pauza_intre_cereri_sec": 2
 }

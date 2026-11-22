@@ -5,7 +5,7 @@ const lei = (v) => fmt.format(v) + " lei";
 const norm = (s) => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-let all = [], storeNames = {}, activeStores = new Set(), shown = PAGE, current = [];
+let all = [], prag = null, storeNames = {}, activeStores = new Set(), shown = PAGE, current = [];
 
 async function init() {
   let data;
@@ -20,9 +20,10 @@ async function init() {
     const n = norm(p.nume);
     return { ...p, _n: n, _main: n.split(/\b(?:pentru|compatibil[a]?|compatibile|for)\b/)[0] };
   });
+  prag = data.alerta_pret;
   data.magazine.forEach((m) => (storeNames[m.id] = m.nume));
   const d = new Date(data.actualizat);
-  $("meta").textContent = `${all.length.toLocaleString("ro-RO")} produse din ${data.magazine.filter((m) => m.produse).length} magazine · actualizat ${d.toLocaleString("ro-RO", { dateStyle: "medium", timeStyle: "short" })}`;
+  $("meta").textContent = `${prag ? `alertă email sub ${prag} lei · ` : ""}${all.length.toLocaleString("ro-RO")} produse din ${data.magazine.filter((m) => m.produse).length} magazine · actualizat ${d.toLocaleString("ro-RO", { dateStyle: "medium", timeStyle: "short" })}`;
 
   $("stores").innerHTML = data.magazine.filter((m) => m.produse).map((m) =>
     `<button type="button" class="chip" data-store="${esc(m.id)}" aria-pressed="false">${esc(m.nume)}<small>${m.produse}</small></button>`).join("");
@@ -39,7 +40,7 @@ function readHash() {
   $("q").value = h.get("q") || "";
   $("cat").value = h.get("cat") || "";
   $("disc").value = h.get("d") || "0";
-  $("sort").value = h.get("s") || "disc";
+  $("sort").value = h.get("s") || "asc";
   $("pmin").value = h.get("min") || "";
   $("pmax").value = h.get("max") || "";
   $("noacc").checked = h.get("acc") !== "1";
@@ -51,7 +52,7 @@ function writeHash() {
   const h = new URLSearchParams();
   const set = (k, v, def = "") => v && v !== def && h.set(k, v);
   set("q", $("q").value.trim()); set("cat", $("cat").value); set("d", $("disc").value, "0");
-  set("s", $("sort").value, "disc"); set("min", $("pmin").value); set("max", $("pmax").value);
+  set("s", $("sort").value, "asc"); set("min", $("pmin").value); set("max", $("pmax").value);
   set("m", [...activeStores].join(","));
   if (!$("noacc").checked) h.set("acc", "1");
   history.replaceState(null, "", h.toString() ? "#" + h : location.pathname);
@@ -81,7 +82,7 @@ function card(p) {
   const old = p.pret_referinta ? `<span class="old" title="${p.sursa_reducere === "istoric" ? "cel mai mare preț văzut în ultimele 60 de zile" : "preț vechi afișat de magazin"}">${lei(p.pret_referinta)}</span>` : "";
   const low = p.zile_istoric >= 7 && p.pret <= p.pret_minim_60z ?`<span class="hint">Cel mai mic preț din ultimele 60 de zile</span>` : "";
   return `<a class="card" href="${esc(p.url)}" target="_blank" rel="noopener nofollow">
-    ${p.reducere_pct > 0 ? `<span class="badge">-${p.reducere_pct}%</span>` : ""}
+    ${prag && p.pret < prag ? `<span class="badge deal">Sub ${prag} lei</span>` : p.reducere_pct > 0 ? `<span class="badge">-${p.reducere_pct}%</span>` : ""}
     <div class="img">${img}</div>
     <div class="body">
       <span class="store">${esc(storeNames[p.magazin] || p.magazin)}</span>
