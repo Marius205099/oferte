@@ -5,7 +5,7 @@ on:
     # O data pe zi la 03:00 ora Romaniei. Cron-ul e in UTC, iar Romania e UTC+2 iarna si UTC+3 vara,
     # asa ca pornim la ambele ore si pasul "Verifica ora" o lasa sa ruleze doar pe cea potrivita.
     - cron: "7 1 * * *" # 03:07 iarna (EET); GitHub intarzie des job-urile programate fix la ora exacta
-    - cron: "7 0 * * *" # 03:00 vara (EEST)
+    - cron: "7 0 * * *" # 03:07 vara (EEST)
   workflow_dispatch:
     inputs:
       email_test:
