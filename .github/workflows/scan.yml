@@ -15,6 +15,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 # o singura scanare odata; una noua asteapta sa se termine cea curenta
 concurrency:
@@ -75,3 +76,12 @@ jobs:
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
         run: python scraper/notify.py --test
+      # Yahoo pune emailurile trimise de pe adresa ta catre ea insasi doar in "Sent".
+      # Un issue care te mentioneaza face GitHub sa-ti trimita email (de la notifications@github.com) in Inbox.
+      - name: Alerta pe GitHub
+        if: always() && hashFiles('alerta.txt') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          { echo "@${{ github.repository_owner }}"; echo; tail -n +2 alerta.txt; } > issue.md
+          gh issue create --title "$(head -n 1 alerta.txt)" --body-file issue.md
